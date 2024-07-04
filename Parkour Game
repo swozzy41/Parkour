@@ -1,86 +1,104 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Basit Top Oyunu</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            background-color: #f0f0f0;
-        }
-    </style>
-</head>
-<body>
-    <canvas id="gameCanvas"></canvas>
-    <script>
-        // Canvas ayarları
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+parkur-oyunu/
+│
+├── main.py
+├── README.md
+└── requirements.txt
+import pygame
+import sys
 
-        // Top ayarları
-        let ballSize = 20;
-        let ballColor = 'blue';
-        let ballX = canvas.width / 2;
-        let ballY = canvas.height / 2;
-        let ballSpeedX = 5;
-        let ballSpeedY = 5;
+# Pygame'i başlat
+pygame.init()
 
-        // Klavye kontrol ayarları
-        let keys = {
-            left: false,
-            right: false,
-            up: false,
-            down: false
-        };
+# Ekran boyutları
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Basit Parkur Oyunu")
 
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowLeft') keys.left = true;
-            if (e.key === 'ArrowRight') keys.right = true;
-            if (e.key === 'ArrowUp') keys.up = true;
-            if (e.key === 'ArrowDown') keys.down = true;
-        });
+# Renkler
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
 
-        window.addEventListener('keyup', function(e) {
-            if (e.key === 'ArrowLeft') keys.left = false;
-            if (e.key === 'ArrowRight') keys.right = false;
-            if (e.key === 'ArrowUp') keys.up = false;
-            if (e.key === 'ArrowDown') keys.down = false;
-        });
+# Oyuncu ayarları
+player_size = 50
+player_color = RED
+player_x = SCREEN_WIDTH // 2
+player_y = SCREEN_HEIGHT - player_size
+player_speed = 5
 
-        function update() {
-            if (keys.left) ballX -= ballSpeedX;
-            if (keys.right) ballX += ballSpeedX;
-            if (keys.up) ballY -= ballSpeedY;
-            if (keys.down) ballY += ballSpeedY;
+# Yerçekimi ve zıplama
+gravity = 0.5
+jump_power = -10
+player_velocity_y = 0
+is_jumping = False
 
-            // Ekran sınırları
-            if (ballX < 0) ballX = 0;
-            if (ballX + ballSize > canvas.width) ballX = canvas.width - ballSize;
-            if (ballY < 0) ballY = 0;
-            if (ballY + ballSize > canvas.height) ballY = canvas.height - ballSize;
-        }
+# Platform ayarları
+platform_width = 100
+platform_height = 20
+platform_color = BLACK
+platforms = [
+    pygame.Rect(100, 500, platform_width, platform_height),
+    pygame.Rect(300, 400, platform_width, platform_height),
+    pygame.Rect(500, 300, platform_width, platform_height),
+]
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
-            ctx.fillStyle = ballColor;
-            ctx.fill();
-            ctx.closePath();
-        }
+# Oyun döngüsü
+clock = pygame.time.Clock()
+running = True
 
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-        gameLoop();
-    </script>
-</body>
-</html>
+    keys = pygame.key.get_pressed()
+    
+    if keys[pygame.K_LEFT]:
+        player_x -= player_speed
+    if keys[pygame.K_RIGHT]:
+        player_x += player_speed
+    if keys[pygame.K_SPACE] and not is_jumping:
+        player_velocity_y = jump_power
+        is_jumping = True
+
+    # Yerçekimi
+    player_velocity_y += gravity
+    player_y += player_velocity_y
+
+    # Platformlarla çarpışma
+    player_rect = pygame.Rect(player_x, player_y, player_size, player_size)
+    for platform in platforms:
+        if player_rect.colliderect(platform) and player_velocity_y > 0:
+            player_y = platform.y - player_size
+            player_velocity_y = 0
+            is_jumping = False
+
+    # Ekran sınırları
+    if player_x < 0:
+        player_x = 0
+    if player_x + player_size > SCREEN_WIDTH:
+        player_x = SCREEN_WIDTH - player_size
+    if player_y + player_size > SCREEN_HEIGHT:
+        player_y = SCREEN_HEIGHT - player_size
+        player_velocity_y = 0
+        is_jumping = False
+
+    # Ekranı beyaza boya
+    screen.fill(WHITE)
+    
+    # Oyuncuyu çiz
+    pygame.draw.rect(screen, player_color, (player_x, player_y, player_size, player_size))
+    
+    # Platformları çiz
+    for platform in platforms:
+        pygame.draw.rect(screen, platform_color, platform)
+
+    # Ekranı güncelle
+    pygame.display.flip()
+    
+    # FPS ayarla
+    clock.tick(60)
+
+pygame.quit()
+sys.exit()
+python main.py
